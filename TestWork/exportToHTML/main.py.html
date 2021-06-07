@@ -1,0 +1,733 @@
+<html>
+<head>
+<title>main.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6897bb;}
+.s3 { color: #808080;}
+.s4 { color: #6a8759;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+main.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">random</span><span class="s0">, </span><span class="s1">time</span><span class="s0">, </span><span class="s1">pygame</span><span class="s0">, </span><span class="s1">sys</span><span class="s0">, </span><span class="s1">copy</span><span class="s0">, </span><span class="s1">os</span>
+
+
+<span class="s1">pygame.init()</span>
+
+<span class="s1">FPS = </span><span class="s2">30 </span><span class="s3"># frames per second to update the screen</span>
+<span class="s1">WINDOWWIDTH = </span><span class="s2">1000  </span><span class="s3"># width of the program's window, in pixels</span>
+<span class="s1">WINDOWHEIGHT = </span><span class="s2">600 </span><span class="s3"># height in pixels</span>
+
+
+<span class="s1">mainClock = pygame.time.Clock()</span>
+
+<span class="s1">pygame.init()</span>
+<span class="s1">pygame.display.set_caption(</span><span class="s4">'game base'</span><span class="s1">)</span>
+<span class="s1">screen = pygame.display.set_mode((</span><span class="s2">1000</span><span class="s0">, </span><span class="s2">600</span><span class="s1">)</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">32</span><span class="s1">)</span>
+
+<span class="s1">font = pygame.font.SysFont(</span><span class="s0">None, </span><span class="s2">20</span><span class="s1">)</span>
+
+
+
+<span class="s1">BOARDWIDTH = </span><span class="s2">6 </span><span class="s3"># how many columns in the board</span>
+<span class="s1">BOARDHEIGHT = </span><span class="s2">6 </span><span class="s3"># how many rows in the board</span>
+<span class="s1">GEMIMAGESIZE = </span><span class="s2">64 </span><span class="s3"># width &amp; height of each space in pixels</span>
+
+<span class="s3"># NUMGEMIMAGES is the number of gem types. You will need .png image</span>
+<span class="s3"># files named gem0.png, gem1.png, etc. up to gem(N-1).png.</span>
+<span class="s1">NUMGEMIMAGES = </span><span class="s2">7</span>
+<span class="s0">assert </span><span class="s1">NUMGEMIMAGES &gt;= </span><span class="s2">5 </span><span class="s3"># game needs at least 5 types of gems to work</span>
+
+<span class="s3"># NUMMATCHSOUNDS is the number of different sounds to choose from when</span>
+<span class="s3"># a match is made. The .wav files are named match0.wav, match1.wav, etc.</span>
+<span class="s1">NUMMATCHSOUNDS = </span><span class="s2">6</span>
+
+<span class="s1">MOVERATE = </span><span class="s2">25 </span><span class="s3"># 1 to 100, larger num means faster animations</span>
+<span class="s1">DEDUCTSPEED = </span><span class="s2">0.8 </span><span class="s3"># reduces score by 1 point every DEDUCTSPEED seconds.</span>
+
+<span class="s3">#             R    G    B</span>
+<span class="s1">PURPLE    = (</span><span class="s2">255</span><span class="s0">,   </span><span class="s2">0</span><span class="s0">, </span><span class="s2">255</span><span class="s1">)</span>
+<span class="s1">LIGHTBLUE = (</span><span class="s2">170</span><span class="s0">, </span><span class="s2">190</span><span class="s0">, </span><span class="s2">255</span><span class="s1">)</span>
+<span class="s1">BLUE      = (  </span><span class="s2">0</span><span class="s0">,   </span><span class="s2">0</span><span class="s0">, </span><span class="s2">255</span><span class="s1">)</span>
+<span class="s1">RED       = (</span><span class="s2">255</span><span class="s0">, </span><span class="s2">100</span><span class="s0">, </span><span class="s2">100</span><span class="s1">)</span>
+<span class="s1">BLACK     = (  </span><span class="s2">0</span><span class="s0">,   </span><span class="s2">0</span><span class="s0">,   </span><span class="s2">0</span><span class="s1">)</span>
+<span class="s1">BROWN     = ( </span><span class="s2">85</span><span class="s0">,  </span><span class="s2">65</span><span class="s0">,   </span><span class="s2">0</span><span class="s1">)</span>
+<span class="s1">HIGHLIGHTCOLOR = PURPLE </span><span class="s3"># color of the selected gem's border</span>
+<span class="s1">BGCOLOR = LIGHTBLUE </span><span class="s3"># background color on the screen</span>
+<span class="s1">GRIDCOLOR = BLUE </span><span class="s3"># color of the game board</span>
+<span class="s1">GAMEOVERCOLOR = RED </span><span class="s3"># color of the &quot;Game over&quot; text.</span>
+<span class="s1">GAMEOVERBGCOLOR = BLACK </span><span class="s3"># background color of the &quot;Game over&quot; text.</span>
+<span class="s1">SCORECOLOR = BROWN </span><span class="s3"># color of the text for the player's score</span>
+
+
+<span class="s3"># The amount of space to the sides of the board to the edge of the window</span>
+<span class="s3"># is used several times, so calculate it once here and store in variables.</span>
+<span class="s1">XMARGIN = int((WINDOWWIDTH - GEMIMAGESIZE * BOARDWIDTH) / </span><span class="s2">12</span><span class="s1">)</span>
+<span class="s1">YMARGIN = int((WINDOWHEIGHT - GEMIMAGESIZE * BOARDHEIGHT) / </span><span class="s2">2</span><span class="s1">)</span>
+
+<span class="s3"># constants for direction values</span>
+<span class="s1">UP = </span><span class="s4">'up'</span>
+<span class="s1">DOWN = </span><span class="s4">'down'</span>
+<span class="s1">LEFT = </span><span class="s4">'left'</span>
+<span class="s1">RIGHT = </span><span class="s4">'right'</span>
+
+<span class="s1">EMPTY_SPACE = -</span><span class="s2">1 </span><span class="s3"># an arbitrary, nonpositive value</span>
+<span class="s1">ROWABOVEBOARD = </span><span class="s4">'row above board' </span><span class="s3"># an arbitrary, noninteger value</span>
+
+
+<span class="s1">font = pygame.font.SysFont(</span><span class="s0">None, </span><span class="s2">20</span><span class="s1">)</span>
+
+
+<span class="s0">def </span><span class="s1">draw_text(text</span><span class="s0">, </span><span class="s1">font</span><span class="s0">, </span><span class="s1">color</span><span class="s0">, </span><span class="s1">surface</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y):</span>
+    <span class="s1">textobj = font.render(text</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s1">color)</span>
+    <span class="s1">textrect = textobj.get_rect()</span>
+    <span class="s1">textrect.topleft = (x</span><span class="s0">, </span><span class="s1">y)</span>
+    <span class="s1">surface.blit(textobj</span><span class="s0">, </span><span class="s1">textrect)</span>
+
+<span class="s0">def </span><span class="s1">main():</span>
+    <span class="s0">global </span><span class="s1">FPSCLOCK</span><span class="s0">, </span><span class="s1">DISPLAYSURF</span><span class="s0">, </span><span class="s1">GEMIMAGES</span><span class="s0">, </span><span class="s1">GAMESOUNDS</span><span class="s0">, </span><span class="s1">BASICFONT</span><span class="s0">, </span><span class="s1">BOARDRECTS</span>
+
+    <span class="s3"># Initial set up.</span>
+    <span class="s1">pygame.init()</span>
+    <span class="s1">FPSCLOCK = pygame.time.Clock()</span>
+    <span class="s1">DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH</span><span class="s0">, </span><span class="s1">WINDOWHEIGHT))</span>
+    <span class="s1">pygame.display.set_caption(</span><span class="s4">'Elemental Match'</span><span class="s1">)</span>
+    <span class="s1">BASICFONT = pygame.font.Font(</span><span class="s4">'freesansbold.ttf'</span><span class="s0">, </span><span class="s2">36</span><span class="s1">)</span>
+
+    <span class="s3"># Load the images</span>
+    <span class="s1">GEMIMAGES = []</span>
+    <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(</span><span class="s2">1</span><span class="s0">, </span><span class="s1">NUMGEMIMAGES+</span><span class="s2">1</span><span class="s1">):</span>
+        <span class="s1">gemImage = pygame.image.load(</span><span class="s4">'gem%s.png' </span><span class="s1">% i)</span>
+        <span class="s0">if </span><span class="s1">gemImage.get_size() != (GEMIMAGESIZE</span><span class="s0">, </span><span class="s1">GEMIMAGESIZE):</span>
+            <span class="s1">gemImage = pygame.transform.smoothscale(gemImage</span><span class="s0">, </span><span class="s1">(GEMIMAGESIZE</span><span class="s0">, </span><span class="s1">GEMIMAGESIZE))</span>
+        <span class="s1">GEMIMAGES.append(gemImage)</span>
+
+    <span class="s3"># Load the sounds.</span>
+    <span class="s1">GAMESOUNDS = {}</span>
+    <span class="s1">GAMESOUNDS[</span><span class="s4">'bad swap'</span><span class="s1">] = pygame.mixer.Sound(</span><span class="s4">'../TestWork/badswap.wav'</span><span class="s1">)</span>
+    <span class="s1">GAMESOUNDS[</span><span class="s4">'match'</span><span class="s1">] = []</span>
+    <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(NUMMATCHSOUNDS):</span>
+        <span class="s1">GAMESOUNDS[</span><span class="s4">'match'</span><span class="s1">].append(pygame.mixer.Sound(</span><span class="s4">'match%s.wav' </span><span class="s1">% i))</span>
+
+    <span class="s3"># Create pygame.Rect objects for each board space to</span>
+    <span class="s3"># do board-coordinate-to-pixel-coordinate conversions.</span>
+    <span class="s1">BOARDRECTS = []</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s1">BOARDRECTS.append([])</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT):</span>
+            <span class="s1">r = pygame.Rect((XMARGIN + (x * GEMIMAGESIZE)</span><span class="s0">,</span>
+                             <span class="s1">YMARGIN + (y * GEMIMAGESIZE)</span><span class="s0">,</span>
+                             <span class="s1">GEMIMAGESIZE</span><span class="s0">,</span>
+                             <span class="s1">GEMIMAGESIZE))</span>
+            <span class="s1">BOARDRECTS[x].append(r)</span>
+
+
+
+    <span class="s0">while True</span><span class="s1">:</span>
+        <span class="s1">MainMenu()</span>
+
+<span class="s0">def </span><span class="s1">MainMenu():</span>
+    <span class="s0">while True</span><span class="s1">:</span>
+
+        <span class="s1">screen.fill((</span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s1">))</span>
+        <span class="s1">draw_text(</span><span class="s4">'main menu'</span><span class="s0">, </span><span class="s1">font</span><span class="s0">, </span><span class="s1">(</span><span class="s2">255</span><span class="s0">, </span><span class="s2">255</span><span class="s0">, </span><span class="s2">255</span><span class="s1">)</span><span class="s0">, </span><span class="s1">screen</span><span class="s0">, </span><span class="s2">20</span><span class="s0">, </span><span class="s2">20</span><span class="s1">)</span>
+
+        <span class="s1">mx</span><span class="s0">, </span><span class="s1">my = pygame.mouse.get_pos()</span>
+
+        <span class="s1">button_1 = pygame.Rect(</span><span class="s2">50</span><span class="s0">, </span><span class="s2">100</span><span class="s0">, </span><span class="s2">200</span><span class="s0">, </span><span class="s2">50</span><span class="s1">)</span>
+        <span class="s1">button_2 = pygame.Rect(</span><span class="s2">50</span><span class="s0">, </span><span class="s2">200</span><span class="s0">, </span><span class="s2">200</span><span class="s0">, </span><span class="s2">50</span><span class="s1">)</span>
+        <span class="s0">if </span><span class="s1">button_1.collidepoint((mx</span><span class="s0">, </span><span class="s1">my)):</span>
+            <span class="s0">if </span><span class="s1">click:</span>
+                <span class="s1">LevelOne()</span>
+                <span class="s1">MainMenu = </span><span class="s0">False</span>
+        <span class="s0">if </span><span class="s1">button_2.collidepoint((mx</span><span class="s0">, </span><span class="s1">my)):</span>
+            <span class="s0">if </span><span class="s1">click:</span>
+                <span class="s1">LevelTwo()</span>
+        <span class="s1">pygame.draw.rect(screen</span><span class="s0">, </span><span class="s1">(</span><span class="s2">255</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">button_1)</span>
+        <span class="s1">pygame.draw.rect(screen</span><span class="s0">, </span><span class="s1">(</span><span class="s2">255</span><span class="s0">, </span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">button_2)</span>
+
+        <span class="s1">click = </span><span class="s0">False</span>
+        <span class="s0">for </span><span class="s1">event </span><span class="s0">in </span><span class="s1">pygame.event.get():</span>
+            <span class="s0">if </span><span class="s1">event.type == pygame.QUIT:</span>
+                <span class="s1">pygame.quit()</span>
+                <span class="s1">sys.exit()</span>
+            <span class="s0">if </span><span class="s1">event.type == pygame.KEYDOWN:</span>
+                <span class="s0">if </span><span class="s1">event.key == pygame.K_ESCAPE:</span>
+                    <span class="s1">pygame.quit()</span>
+                    <span class="s1">sys.exit()</span>
+            <span class="s0">if </span><span class="s1">event.type == pygame.MOUSEBUTTONDOWN:</span>
+                <span class="s0">if </span><span class="s1">event.button == </span><span class="s2">1</span><span class="s1">:</span>
+                    <span class="s1">click = </span><span class="s0">True</span>
+
+        <span class="s1">pygame.display.update()</span>
+        <span class="s1">mainClock.tick(</span><span class="s2">60</span><span class="s1">)</span>
+
+<span class="s0">def </span><span class="s1">LevelOne():</span>
+    <span class="s1">gameBoard = getBlankBoard()</span>
+    <span class="s1">score = </span><span class="s2">0</span>
+    <span class="s1">fillBoardAndAnimate(gameBoard</span><span class="s0">, </span><span class="s1">[]</span><span class="s0">, </span><span class="s1">score)  </span><span class="s3"># Drop the initial gems.</span>
+
+    <span class="s1">pygame.display.set_caption(</span><span class="s4">'P.Earth'</span><span class="s1">)</span>
+
+    <span class="s3"># initialize variables for the start of a new game</span>
+    <span class="s1">firstSelectedGem = </span><span class="s0">None</span>
+    <span class="s1">lastMouseDownX = </span><span class="s0">None</span>
+    <span class="s1">lastMouseDownY = </span><span class="s0">None</span>
+    <span class="s1">gameIsOver = </span><span class="s0">False</span>
+    <span class="s1">lastScoreDeduction = time.time()</span>
+    <span class="s1">clickContinueTextSurf = </span><span class="s0">None</span>
+
+    <span class="s0">while True</span><span class="s1">:  </span><span class="s3"># main game loop</span>
+        <span class="s1">clickedSpace = </span><span class="s0">None</span>
+        <span class="s0">for </span><span class="s1">event </span><span class="s0">in </span><span class="s1">pygame.event.get():  </span><span class="s3"># event handling loop</span>
+            <span class="s0">if </span><span class="s1">event.type == pygame.QUIT </span><span class="s0">or </span><span class="s1">(event.type == pygame.KEYUP </span><span class="s0">and </span><span class="s1">event.key == pygame.K_ESCAPE):</span>
+                <span class="s1">pygame.quit()</span>
+                <span class="s1">sys.exit()</span>
+            <span class="s0">elif </span><span class="s1">event.type == pygame.KEYUP </span><span class="s0">and </span><span class="s1">event.key == pygame.K_BACKSPACE:</span>
+                <span class="s0">return  </span><span class="s3"># start a new game</span>
+
+            <span class="s0">elif </span><span class="s1">event.type == pygame.MOUSEBUTTONUP:</span>
+                <span class="s0">if </span><span class="s1">gameIsOver:</span>
+                    <span class="s0">return  </span><span class="s3"># after games ends, click to start a new game</span>
+
+                <span class="s0">if </span><span class="s1">event.pos == (lastMouseDownX</span><span class="s0">, </span><span class="s1">lastMouseDownY):</span>
+                    <span class="s3"># This event is a mouse click, not the end of a mouse drag.</span>
+                    <span class="s1">clickedSpace = checkForGemClick(event.pos)</span>
+                <span class="s0">else</span><span class="s1">:</span>
+                    <span class="s3"># this is the end of a mouse drag</span>
+                    <span class="s1">firstSelectedGem = checkForGemClick((lastMouseDownX</span><span class="s0">, </span><span class="s1">lastMouseDownY))</span>
+                    <span class="s1">clickedSpace = checkForGemClick(event.pos)</span>
+                    <span class="s0">if not </span><span class="s1">firstSelectedGem </span><span class="s0">or not </span><span class="s1">clickedSpace:</span>
+                        <span class="s3"># if not part of a valid drag, deselect both</span>
+                        <span class="s1">firstSelectedGem = </span><span class="s0">None</span>
+                        <span class="s1">clickedSpace = </span><span class="s0">None</span>
+            <span class="s0">elif </span><span class="s1">event.type == pygame.MOUSEBUTTONDOWN:</span>
+                <span class="s3"># this is the start of a mouse click or mouse drag</span>
+                <span class="s1">lastMouseDownX</span><span class="s0">, </span><span class="s1">lastMouseDownY = event.pos</span>
+
+        <span class="s0">if </span><span class="s1">clickedSpace </span><span class="s0">and not </span><span class="s1">firstSelectedGem:</span>
+            <span class="s3"># This was the first gem clicked on.</span>
+            <span class="s1">firstSelectedGem = clickedSpace</span>
+        <span class="s0">elif </span><span class="s1">clickedSpace </span><span class="s0">and </span><span class="s1">firstSelectedGem:</span>
+            <span class="s3"># Two gems have been clicked on and selected. Swap the gems.</span>
+            <span class="s1">firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem = getSwappingGems(gameBoard</span><span class="s0">, </span><span class="s1">firstSelectedGem</span><span class="s0">, </span><span class="s1">clickedSpace)</span>
+            <span class="s0">if </span><span class="s1">firstSwappingGem == </span><span class="s0">None and </span><span class="s1">secondSwappingGem == </span><span class="s0">None</span><span class="s1">:</span>
+                <span class="s3"># If both are None, then the gems were not adjacent</span>
+                <span class="s1">firstSelectedGem = </span><span class="s0">None  </span><span class="s3"># deselect the first gem</span>
+                <span class="s0">continue</span>
+
+            <span class="s3"># Show the swap animation on the screen.</span>
+            <span class="s1">boardCopy = getBoardCopyMinusGems(gameBoard</span><span class="s0">, </span><span class="s1">(firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem))</span>
+            <span class="s1">animateMovingGems(boardCopy</span><span class="s0">, </span><span class="s1">[firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem]</span><span class="s0">, </span><span class="s1">[]</span><span class="s0">, </span><span class="s1">score)</span>
+
+            <span class="s3"># Swap the gems in the board data structure.</span>
+            <span class="s1">gameBoard[firstSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][firstSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = secondSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+            <span class="s1">gameBoard[secondSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][secondSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = firstSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+
+            <span class="s3"># See if this is a matching move.</span>
+            <span class="s1">matchedGems = findMatchingGems(gameBoard)</span>
+            <span class="s0">if </span><span class="s1">matchedGems == []:</span>
+                <span class="s3"># Was not a matching move; swap the gems back</span>
+                <span class="s1">GAMESOUNDS[</span><span class="s4">'bad swap'</span><span class="s1">].play()</span>
+                <span class="s1">animateMovingGems(boardCopy</span><span class="s0">, </span><span class="s1">[firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem]</span><span class="s0">, </span><span class="s1">[]</span><span class="s0">, </span><span class="s1">score)</span>
+                <span class="s1">gameBoard[firstSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][firstSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = firstSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+                <span class="s1">gameBoard[secondSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][secondSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = secondSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+            <span class="s0">else</span><span class="s1">:</span>
+                <span class="s3"># This was a matching move.</span>
+                <span class="s1">scoreAdd = </span><span class="s2">0</span>
+                <span class="s0">while </span><span class="s1">matchedGems != []:</span>
+                    <span class="s3"># Remove matched gems, then pull down the board.</span>
+
+                    <span class="s3"># points is a list of dicts that tells fillBoardAndAnimate()</span>
+                    <span class="s3"># where on the screen to display text to show how many</span>
+                    <span class="s3"># points the player got. points is a list because if</span>
+                    <span class="s3"># the playergets multiple matches, then multiple points text should appear.</span>
+                    <span class="s1">points = []</span>
+                    <span class="s0">for </span><span class="s1">gemSet </span><span class="s0">in </span><span class="s1">matchedGems:</span>
+                        <span class="s1">scoreAdd += (</span><span class="s2">10 </span><span class="s1">+ (len(gemSet) - </span><span class="s2">3</span><span class="s1">) * </span><span class="s2">10</span><span class="s1">)</span>
+                        <span class="s0">for </span><span class="s1">gem </span><span class="s0">in </span><span class="s1">gemSet:</span>
+                            <span class="s1">gameBoard[gem[</span><span class="s2">0</span><span class="s1">]][gem[</span><span class="s2">1</span><span class="s1">]] = EMPTY_SPACE</span>
+                        <span class="s1">points.append({</span><span class="s4">'points'</span><span class="s1">: scoreAdd</span><span class="s0">,</span>
+                                       <span class="s4">'x'</span><span class="s1">: gem[</span><span class="s2">0</span><span class="s1">] * GEMIMAGESIZE + XMARGIN</span><span class="s0">,</span>
+                                       <span class="s4">'y'</span><span class="s1">: gem[</span><span class="s2">1</span><span class="s1">] * GEMIMAGESIZE + YMARGIN})</span>
+                    <span class="s1">random.choice(GAMESOUNDS[</span><span class="s4">'match'</span><span class="s1">]).play()</span>
+                    <span class="s1">score += scoreAdd</span>
+
+                    <span class="s3"># Drop the new gems.</span>
+                    <span class="s1">fillBoardAndAnimate(gameBoard</span><span class="s0">, </span><span class="s1">points</span><span class="s0">, </span><span class="s1">score)</span>
+
+                    <span class="s3"># Check if there are any new matches.</span>
+                    <span class="s1">matchedGems = findMatchingGems(gameBoard)</span>
+            <span class="s1">firstSelectedGem = </span><span class="s0">None</span>
+
+            <span class="s0">if not </span><span class="s1">canMakeMove(gameBoard):</span>
+                <span class="s1">gameIsOver = </span><span class="s0">True</span>
+
+        <span class="s3"># Draw the board.</span>
+        <span class="s3"># DISPLAYSURF.fill(BGCOLOR)</span>
+        <span class="s1">img = pygame.image.load(</span><span class="s4">&quot;IceBackground.png&quot;</span><span class="s1">)</span>
+        <span class="s1">DISPLAYSURF.blit(img</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s1">))</span>
+
+        <span class="s1">drawBoard(gameBoard)</span>
+        <span class="s0">if </span><span class="s1">firstSelectedGem != </span><span class="s0">None</span><span class="s1">:</span>
+            <span class="s1">highlightSpace(firstSelectedGem[</span><span class="s4">'x'</span><span class="s1">]</span><span class="s0">, </span><span class="s1">firstSelectedGem[</span><span class="s4">'y'</span><span class="s1">])</span>
+        <span class="s0">if </span><span class="s1">gameIsOver:</span>
+            <span class="s0">if </span><span class="s1">clickContinueTextSurf == </span><span class="s0">None</span><span class="s1">:</span>
+                <span class="s3"># Only render the text once. In future iterations, just</span>
+                <span class="s3"># use the Surface object already in clickContinueTextSurf</span>
+                <span class="s1">clickContinueTextSurf = BASICFONT.render(</span><span class="s4">'Final Score: %s (Click to continue)' </span><span class="s1">% (score)</span><span class="s0">, </span><span class="s2">1</span><span class="s0">,</span>
+                                                         <span class="s1">GAMEOVERCOLOR</span><span class="s0">, </span><span class="s1">GAMEOVERBGCOLOR)</span>
+                <span class="s1">clickContinueTextRect = clickContinueTextSurf.get_rect()</span>
+                <span class="s1">clickContinueTextRect.center = int(WINDOWWIDTH / </span><span class="s2">2</span><span class="s1">)</span><span class="s0">, </span><span class="s1">int(WINDOWHEIGHT / </span><span class="s2">2</span><span class="s1">)</span>
+            <span class="s1">DISPLAYSURF.blit(clickContinueTextSurf</span><span class="s0">, </span><span class="s1">clickContinueTextRect)</span>
+        <span class="s0">elif </span><span class="s1">score &gt; </span><span class="s2">0 </span><span class="s0">and </span><span class="s1">time.time() - lastScoreDeduction &gt; DEDUCTSPEED:</span>
+            <span class="s3"># score drops over time</span>
+            <span class="s1">score -= </span><span class="s2">1</span>
+            <span class="s1">lastScoreDeduction = time.time()</span>
+        <span class="s1">drawScore(score)</span>
+        <span class="s1">pygame.display.update()</span>
+        <span class="s1">FPSCLOCK.tick(FPS)</span>
+
+<span class="s0">def </span><span class="s1">LevelTwo():</span>
+    <span class="s3"># Plays through a single game. When the game is over, this function returns.</span>
+
+    <span class="s3"># initalize the board</span>
+    <span class="s1">gameBoard = getBlankBoard()</span>
+    <span class="s1">score = </span><span class="s2">0</span>
+    <span class="s1">fillBoardAndAnimate(gameBoard</span><span class="s0">, </span><span class="s1">[]</span><span class="s0">, </span><span class="s1">score) </span><span class="s3"># Drop the initial gems.</span>
+
+    <span class="s3"># initialize variables for the start of a new game</span>
+    <span class="s1">firstSelectedGem = </span><span class="s0">None</span>
+    <span class="s1">lastMouseDownX = </span><span class="s0">None</span>
+    <span class="s1">lastMouseDownY = </span><span class="s0">None</span>
+    <span class="s1">gameIsOver = </span><span class="s0">False</span>
+    <span class="s1">lastScoreDeduction = time.time()</span>
+    <span class="s1">clickContinueTextSurf = </span><span class="s0">None</span>
+
+    <span class="s1">BOARDWIDTH =+ </span><span class="s2">1</span>
+    <span class="s1">BOARDHEIGHT =+ </span><span class="s2">1</span>
+
+    <span class="s0">while True</span><span class="s1">: </span><span class="s3"># main game loop</span>
+        <span class="s1">clickedSpace = </span><span class="s0">None</span>
+        <span class="s0">for </span><span class="s1">event </span><span class="s0">in </span><span class="s1">pygame.event.get(): </span><span class="s3"># event handling loop</span>
+            <span class="s0">if </span><span class="s1">event.type == pygame.QUIT </span><span class="s0">or </span><span class="s1">(event.type == pygame.KEYUP </span><span class="s0">and </span><span class="s1">event.key == pygame.K_ESCAPE):</span>
+                <span class="s1">pygame.quit()</span>
+                <span class="s1">sys.exit()</span>
+            <span class="s0">elif </span><span class="s1">event.type == pygame.KEYUP </span><span class="s0">and </span><span class="s1">event.key == pygame.K_BACKSPACE:</span>
+                <span class="s0">return </span><span class="s3"># start a new game</span>
+
+            <span class="s0">elif </span><span class="s1">event.type == pygame.MOUSEBUTTONUP:</span>
+                <span class="s0">if </span><span class="s1">gameIsOver:</span>
+                    <span class="s0">return </span><span class="s3"># after games ends, click to start a new game</span>
+
+                <span class="s0">if </span><span class="s1">event.pos == (lastMouseDownX</span><span class="s0">, </span><span class="s1">lastMouseDownY):</span>
+                    <span class="s3"># This event is a mouse click, not the end of a mouse drag.</span>
+                    <span class="s1">clickedSpace = checkForGemClick(event.pos)</span>
+                <span class="s0">else</span><span class="s1">:</span>
+                    <span class="s3"># this is the end of a mouse drag</span>
+                    <span class="s1">firstSelectedGem = checkForGemClick((lastMouseDownX</span><span class="s0">, </span><span class="s1">lastMouseDownY))</span>
+                    <span class="s1">clickedSpace = checkForGemClick(event.pos)</span>
+                    <span class="s0">if not </span><span class="s1">firstSelectedGem </span><span class="s0">or not </span><span class="s1">clickedSpace:</span>
+                        <span class="s3"># if not part of a valid drag, deselect both</span>
+                        <span class="s1">firstSelectedGem = </span><span class="s0">None</span>
+                        <span class="s1">clickedSpace = </span><span class="s0">None</span>
+            <span class="s0">elif </span><span class="s1">event.type == pygame.MOUSEBUTTONDOWN:</span>
+                <span class="s3"># this is the start of a mouse click or mouse drag</span>
+                <span class="s1">lastMouseDownX</span><span class="s0">, </span><span class="s1">lastMouseDownY = event.pos</span>
+
+        <span class="s0">if </span><span class="s1">clickedSpace </span><span class="s0">and not </span><span class="s1">firstSelectedGem:</span>
+            <span class="s3"># This was the first gem clicked on.</span>
+            <span class="s1">firstSelectedGem = clickedSpace</span>
+        <span class="s0">elif </span><span class="s1">clickedSpace </span><span class="s0">and </span><span class="s1">firstSelectedGem:</span>
+            <span class="s3"># Two gems have been clicked on and selected. Swap the gems.</span>
+            <span class="s1">firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem = getSwappingGems(gameBoard</span><span class="s0">, </span><span class="s1">firstSelectedGem</span><span class="s0">, </span><span class="s1">clickedSpace)</span>
+            <span class="s0">if </span><span class="s1">firstSwappingGem == </span><span class="s0">None and </span><span class="s1">secondSwappingGem == </span><span class="s0">None</span><span class="s1">:</span>
+                <span class="s3"># If both are None, then the gems were not adjacent</span>
+                <span class="s1">firstSelectedGem = </span><span class="s0">None </span><span class="s3"># deselect the first gem</span>
+                <span class="s0">continue</span>
+
+            <span class="s3"># Show the swap animation on the screen.</span>
+            <span class="s1">boardCopy = getBoardCopyMinusGems(gameBoard</span><span class="s0">, </span><span class="s1">(firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem))</span>
+            <span class="s1">animateMovingGems(boardCopy</span><span class="s0">, </span><span class="s1">[firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem]</span><span class="s0">, </span><span class="s1">[]</span><span class="s0">, </span><span class="s1">score)</span>
+
+            <span class="s3"># Swap the gems in the board data structure.</span>
+            <span class="s1">gameBoard[firstSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][firstSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = secondSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+            <span class="s1">gameBoard[secondSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][secondSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = firstSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+
+            <span class="s3"># See if this is a matching move.</span>
+            <span class="s1">matchedGems = findMatchingGems(gameBoard)</span>
+            <span class="s0">if </span><span class="s1">matchedGems == []:</span>
+                <span class="s3"># Was not a matching move; swap the gems back</span>
+                <span class="s1">GAMESOUNDS[</span><span class="s4">'bad swap'</span><span class="s1">].play()</span>
+                <span class="s1">animateMovingGems(boardCopy</span><span class="s0">, </span><span class="s1">[firstSwappingGem</span><span class="s0">, </span><span class="s1">secondSwappingGem]</span><span class="s0">, </span><span class="s1">[]</span><span class="s0">, </span><span class="s1">score)</span>
+                <span class="s1">gameBoard[firstSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][firstSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = firstSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+                <span class="s1">gameBoard[secondSwappingGem[</span><span class="s4">'x'</span><span class="s1">]][secondSwappingGem[</span><span class="s4">'y'</span><span class="s1">]] = secondSwappingGem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+            <span class="s0">else</span><span class="s1">:</span>
+                <span class="s3"># This was a matching move.</span>
+                <span class="s1">scoreAdd = </span><span class="s2">0</span>
+                <span class="s0">while </span><span class="s1">matchedGems != []:</span>
+                    <span class="s3"># Remove matched gems, then pull down the board.</span>
+
+                    <span class="s3"># points is a list of dicts that tells fillBoardAndAnimate()</span>
+                    <span class="s3"># where on the screen to display text to show how many</span>
+                    <span class="s3"># points the player got. points is a list because if</span>
+                    <span class="s3"># the playergets multiple matches, then multiple points text should appear.</span>
+                    <span class="s1">points = []</span>
+                    <span class="s0">for </span><span class="s1">gemSet </span><span class="s0">in </span><span class="s1">matchedGems:</span>
+                        <span class="s1">scoreAdd += (</span><span class="s2">10 </span><span class="s1">+ (len(gemSet) - </span><span class="s2">3</span><span class="s1">) * </span><span class="s2">10</span><span class="s1">)</span>
+                        <span class="s0">for </span><span class="s1">gem </span><span class="s0">in </span><span class="s1">gemSet:</span>
+                            <span class="s1">gameBoard[gem[</span><span class="s2">0</span><span class="s1">]][gem[</span><span class="s2">1</span><span class="s1">]] = EMPTY_SPACE</span>
+                        <span class="s1">points.append({</span><span class="s4">'points'</span><span class="s1">: scoreAdd</span><span class="s0">,</span>
+                                       <span class="s4">'x'</span><span class="s1">: gem[</span><span class="s2">0</span><span class="s1">] * GEMIMAGESIZE + XMARGIN</span><span class="s0">,</span>
+                                       <span class="s4">'y'</span><span class="s1">: gem[</span><span class="s2">1</span><span class="s1">] * GEMIMAGESIZE + YMARGIN})</span>
+                    <span class="s1">random.choice(GAMESOUNDS[</span><span class="s4">'match'</span><span class="s1">]).play()</span>
+                    <span class="s1">score += scoreAdd</span>
+
+                    <span class="s3"># Drop the new gems.</span>
+                    <span class="s1">fillBoardAndAnimate(gameBoard</span><span class="s0">, </span><span class="s1">points</span><span class="s0">, </span><span class="s1">score)</span>
+
+                    <span class="s3"># Check if there are any new matches.</span>
+                    <span class="s1">matchedGems = findMatchingGems(gameBoard)</span>
+            <span class="s1">firstSelectedGem = </span><span class="s0">None</span>
+
+            <span class="s0">if not </span><span class="s1">canMakeMove(gameBoard):</span>
+                <span class="s1">gameIsOver = </span><span class="s0">True</span>
+
+        <span class="s3"># Draw the board.</span>
+        <span class="s3">#DISPLAYSURF.fill(BGCOLOR)</span>
+        <span class="s1">img = pygame.image.load(</span><span class="s4">&quot;EarthBackground.png&quot;</span><span class="s1">)\</span>
+
+        <span class="s1">DISPLAYSURF.blit(img</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">, </span><span class="s2">0</span><span class="s1">))</span>
+
+        <span class="s1">drawBoard(gameBoard)</span>
+        <span class="s0">if </span><span class="s1">firstSelectedGem != </span><span class="s0">None</span><span class="s1">:</span>
+            <span class="s1">highlightSpace(firstSelectedGem[</span><span class="s4">'x'</span><span class="s1">]</span><span class="s0">, </span><span class="s1">firstSelectedGem[</span><span class="s4">'y'</span><span class="s1">])</span>
+        <span class="s0">if </span><span class="s1">gameIsOver:</span>
+            <span class="s0">if </span><span class="s1">clickContinueTextSurf == </span><span class="s0">None</span><span class="s1">:</span>
+                <span class="s3"># Only render the text once. In future iterations, just</span>
+                <span class="s3"># use the Surface object already in clickContinueTextSurf</span>
+                <span class="s1">clickContinueTextSurf = BASICFONT.render(</span><span class="s4">'Final Score: %s (Click to continue)' </span><span class="s1">% (score)</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s1">GAMEOVERCOLOR</span><span class="s0">, </span><span class="s1">GAMEOVERBGCOLOR)</span>
+                <span class="s1">clickContinueTextRect = clickContinueTextSurf.get_rect()</span>
+                <span class="s1">clickContinueTextRect.center = int(WINDOWWIDTH / </span><span class="s2">2</span><span class="s1">)</span><span class="s0">, </span><span class="s1">int(WINDOWHEIGHT / </span><span class="s2">2</span><span class="s1">)</span>
+            <span class="s1">DISPLAYSURF.blit(clickContinueTextSurf</span><span class="s0">, </span><span class="s1">clickContinueTextRect)</span>
+        <span class="s0">elif </span><span class="s1">score &gt; </span><span class="s2">0 </span><span class="s0">and </span><span class="s1">time.time() - lastScoreDeduction &gt; DEDUCTSPEED:</span>
+            <span class="s3"># score drops over time</span>
+            <span class="s1">score -= </span><span class="s2">1</span>
+            <span class="s1">lastScoreDeduction = time.time()</span>
+        <span class="s1">drawScore(score)</span>
+        <span class="s1">pygame.display.update()</span>
+        <span class="s1">FPSCLOCK.tick(FPS)</span>
+
+<span class="s0">def </span><span class="s1">getSwappingGems(board</span><span class="s0">, </span><span class="s1">firstXY</span><span class="s0">, </span><span class="s1">secondXY):</span>
+    <span class="s3"># If the gems at the (X, Y) coordinates of the two gems are adjacent,</span>
+    <span class="s3"># then their 'direction' keys are set to the appropriate direction</span>
+    <span class="s3"># value to be swapped with each other.</span>
+    <span class="s3"># Otherwise, (None, None) is returned.</span>
+    <span class="s1">firstGem = {</span><span class="s4">'imageNum'</span><span class="s1">: board[firstXY[</span><span class="s4">'x'</span><span class="s1">]][firstXY[</span><span class="s4">'y'</span><span class="s1">]]</span><span class="s0">,</span>
+                <span class="s4">'x'</span><span class="s1">: firstXY[</span><span class="s4">'x'</span><span class="s1">]</span><span class="s0">,</span>
+                <span class="s4">'y'</span><span class="s1">: firstXY[</span><span class="s4">'y'</span><span class="s1">]}</span>
+    <span class="s1">secondGem = {</span><span class="s4">'imageNum'</span><span class="s1">: board[secondXY[</span><span class="s4">'x'</span><span class="s1">]][secondXY[</span><span class="s4">'y'</span><span class="s1">]]</span><span class="s0">,</span>
+                 <span class="s4">'x'</span><span class="s1">: secondXY[</span><span class="s4">'x'</span><span class="s1">]</span><span class="s0">,</span>
+                 <span class="s4">'y'</span><span class="s1">: secondXY[</span><span class="s4">'y'</span><span class="s1">]}</span>
+    <span class="s1">highlightedGem = </span><span class="s0">None</span>
+    <span class="s0">if </span><span class="s1">firstGem[</span><span class="s4">'x'</span><span class="s1">] == secondGem[</span><span class="s4">'x'</span><span class="s1">] + </span><span class="s2">1 </span><span class="s0">and </span><span class="s1">firstGem[</span><span class="s4">'y'</span><span class="s1">] == secondGem[</span><span class="s4">'y'</span><span class="s1">]:</span>
+        <span class="s1">firstGem[</span><span class="s4">'direction'</span><span class="s1">] = LEFT</span>
+        <span class="s1">secondGem[</span><span class="s4">'direction'</span><span class="s1">] = RIGHT</span>
+    <span class="s0">elif </span><span class="s1">firstGem[</span><span class="s4">'x'</span><span class="s1">] == secondGem[</span><span class="s4">'x'</span><span class="s1">] - </span><span class="s2">1 </span><span class="s0">and </span><span class="s1">firstGem[</span><span class="s4">'y'</span><span class="s1">] == secondGem[</span><span class="s4">'y'</span><span class="s1">]:</span>
+        <span class="s1">firstGem[</span><span class="s4">'direction'</span><span class="s1">] = RIGHT</span>
+        <span class="s1">secondGem[</span><span class="s4">'direction'</span><span class="s1">] = LEFT</span>
+    <span class="s0">elif </span><span class="s1">firstGem[</span><span class="s4">'y'</span><span class="s1">] == secondGem[</span><span class="s4">'y'</span><span class="s1">] + </span><span class="s2">1 </span><span class="s0">and </span><span class="s1">firstGem[</span><span class="s4">'x'</span><span class="s1">] == secondGem[</span><span class="s4">'x'</span><span class="s1">]:</span>
+        <span class="s1">firstGem[</span><span class="s4">'direction'</span><span class="s1">] = UP</span>
+        <span class="s1">secondGem[</span><span class="s4">'direction'</span><span class="s1">] = DOWN</span>
+    <span class="s0">elif </span><span class="s1">firstGem[</span><span class="s4">'y'</span><span class="s1">] == secondGem[</span><span class="s4">'y'</span><span class="s1">] - </span><span class="s2">1 </span><span class="s0">and </span><span class="s1">firstGem[</span><span class="s4">'x'</span><span class="s1">] == secondGem[</span><span class="s4">'x'</span><span class="s1">]:</span>
+        <span class="s1">firstGem[</span><span class="s4">'direction'</span><span class="s1">] = DOWN</span>
+        <span class="s1">secondGem[</span><span class="s4">'direction'</span><span class="s1">] = UP</span>
+    <span class="s0">else</span><span class="s1">:</span>
+        <span class="s3"># These gems are not adjacent and can't be swapped.</span>
+        <span class="s0">return None, None</span>
+    <span class="s0">return </span><span class="s1">firstGem</span><span class="s0">, </span><span class="s1">secondGem</span>
+
+
+<span class="s0">def </span><span class="s1">getBlankBoard():</span>
+    <span class="s3"># Create and return a blank board data structure.</span>
+    <span class="s1">board = []</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s1">board.append([EMPTY_SPACE] * BOARDHEIGHT)</span>
+    <span class="s0">return </span><span class="s1">board</span>
+
+
+<span class="s0">def </span><span class="s1">canMakeMove(board):</span>
+    <span class="s3"># Return True if the board is in a state where a matching</span>
+    <span class="s3"># move can be made on it. Otherwise return False.</span>
+
+    <span class="s3"># The patterns in oneOffPatterns represent gems that are configured</span>
+    <span class="s3"># in a way where it only takes one move to make a triplet.</span>
+    <span class="s1">oneOffPatterns = (((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">,</span><span class="s2">0</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">,</span><span class="s2">0</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">,</span><span class="s2">0</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">,</span><span class="s2">1</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">,</span><span class="s2">1</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">2</span><span class="s0">,</span><span class="s2">1</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">,</span><span class="s2">2</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">,</span><span class="s2">3</span><span class="s1">))</span><span class="s0">,</span>
+                      <span class="s1">((</span><span class="s2">0</span><span class="s0">,</span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">,</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">,</span><span class="s2">3</span><span class="s1">)))</span>
+
+
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT):</span>
+            <span class="s0">for </span><span class="s1">pat </span><span class="s0">in </span><span class="s1">oneOffPatterns:</span>
+                <span class="s3"># check each possible pattern of &quot;match in next move&quot; to</span>
+                <span class="s3"># see if a possible move can be made.</span>
+                <span class="s0">if </span><span class="s1">(getGemAt(board</span><span class="s0">, </span><span class="s1">x+pat[</span><span class="s2">0</span><span class="s1">][</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">y+pat[</span><span class="s2">0</span><span class="s1">][</span><span class="s2">1</span><span class="s1">]) == \</span>
+                    <span class="s1">getGemAt(board</span><span class="s0">, </span><span class="s1">x+pat[</span><span class="s2">1</span><span class="s1">][</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">y+pat[</span><span class="s2">1</span><span class="s1">][</span><span class="s2">1</span><span class="s1">]) == \</span>
+                    <span class="s1">getGemAt(board</span><span class="s0">, </span><span class="s1">x+pat[</span><span class="s2">2</span><span class="s1">][</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">y+pat[</span><span class="s2">2</span><span class="s1">][</span><span class="s2">1</span><span class="s1">]) != </span><span class="s0">None</span><span class="s1">) </span><span class="s0">or </span><span class="s1">\</span>
+                   <span class="s1">(getGemAt(board</span><span class="s0">, </span><span class="s1">x+pat[</span><span class="s2">0</span><span class="s1">][</span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">y+pat[</span><span class="s2">0</span><span class="s1">][</span><span class="s2">0</span><span class="s1">]) == \</span>
+                    <span class="s1">getGemAt(board</span><span class="s0">, </span><span class="s1">x+pat[</span><span class="s2">1</span><span class="s1">][</span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">y+pat[</span><span class="s2">1</span><span class="s1">][</span><span class="s2">0</span><span class="s1">]) == \</span>
+                    <span class="s1">getGemAt(board</span><span class="s0">, </span><span class="s1">x+pat[</span><span class="s2">2</span><span class="s1">][</span><span class="s2">1</span><span class="s1">]</span><span class="s0">, </span><span class="s1">y+pat[</span><span class="s2">2</span><span class="s1">][</span><span class="s2">0</span><span class="s1">]) != </span><span class="s0">None</span><span class="s1">):</span>
+                    <span class="s0">return True </span><span class="s3"># return True the first time you find a pattern</span>
+    <span class="s0">return False</span>
+
+
+<span class="s0">def </span><span class="s1">drawMovingGem(gem</span><span class="s0">, </span><span class="s1">progress):</span>
+    <span class="s3"># Draw a gem sliding in the direction that its 'direction' key</span>
+    <span class="s3"># indicates. The progress parameter is a number from 0 (just</span>
+    <span class="s3"># starting) to 100 (slide complete).</span>
+    <span class="s1">movex = </span><span class="s2">0</span>
+    <span class="s1">movey = </span><span class="s2">0</span>
+    <span class="s1">progress *= </span><span class="s2">0.01</span>
+
+    <span class="s0">if </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == UP:</span>
+        <span class="s1">movey = -int(progress * GEMIMAGESIZE)</span>
+    <span class="s0">elif </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == DOWN:</span>
+        <span class="s1">movey = int(progress * GEMIMAGESIZE)</span>
+    <span class="s0">elif </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == RIGHT:</span>
+        <span class="s1">movex = int(progress * GEMIMAGESIZE)</span>
+    <span class="s0">elif </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == LEFT:</span>
+        <span class="s1">movex = -int(progress * GEMIMAGESIZE)</span>
+
+    <span class="s1">basex = gem[</span><span class="s4">'x'</span><span class="s1">]</span>
+    <span class="s1">basey = gem[</span><span class="s4">'y'</span><span class="s1">]</span>
+    <span class="s0">if </span><span class="s1">basey == ROWABOVEBOARD:</span>
+        <span class="s1">basey = -</span><span class="s2">1</span>
+
+    <span class="s1">pixelx = XMARGIN + (basex * GEMIMAGESIZE)</span>
+    <span class="s1">pixely = YMARGIN + (basey * GEMIMAGESIZE)</span>
+    <span class="s1">r = pygame.Rect( (pixelx + movex</span><span class="s0">, </span><span class="s1">pixely + movey</span><span class="s0">, </span><span class="s1">GEMIMAGESIZE</span><span class="s0">, </span><span class="s1">GEMIMAGESIZE) )</span>
+    <span class="s1">DISPLAYSURF.blit(GEMIMAGES[gem[</span><span class="s4">'imageNum'</span><span class="s1">]]</span><span class="s0">, </span><span class="s1">r)</span>
+
+
+<span class="s0">def </span><span class="s1">pullDownAllGems(board):</span>
+    <span class="s3"># pulls down gems on the board to the bottom to fill in any gaps</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s1">gemsInColumn = []</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT):</span>
+            <span class="s0">if </span><span class="s1">board[x][y] != EMPTY_SPACE:</span>
+                <span class="s1">gemsInColumn.append(board[x][y])</span>
+        <span class="s1">board[x] = ([EMPTY_SPACE] * (BOARDHEIGHT - len(gemsInColumn))) + gemsInColumn</span>
+
+
+<span class="s0">def </span><span class="s1">getGemAt(board</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y):</span>
+    <span class="s0">if </span><span class="s1">x &lt; </span><span class="s2">0 </span><span class="s0">or </span><span class="s1">y &lt; </span><span class="s2">0 </span><span class="s0">or </span><span class="s1">x &gt;= BOARDWIDTH </span><span class="s0">or </span><span class="s1">y &gt;= BOARDHEIGHT:</span>
+        <span class="s0">return None</span>
+    <span class="s0">else</span><span class="s1">:</span>
+        <span class="s0">return </span><span class="s1">board[x][y]</span>
+
+
+<span class="s0">def </span><span class="s1">getDropSlots(board):</span>
+    <span class="s3"># Creates a &quot;drop slot&quot; for each column and fills the slot with a</span>
+    <span class="s3"># number of gems that that column is lacking. This function assumes</span>
+    <span class="s3"># that the gems have been gravity dropped already.</span>
+    <span class="s1">boardCopy = copy.deepcopy(board)</span>
+    <span class="s1">pullDownAllGems(boardCopy)</span>
+
+    <span class="s1">dropSlots = []</span>
+    <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s1">dropSlots.append([])</span>
+
+    <span class="s3"># count the number of empty spaces in each column on the board</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT-</span><span class="s2">1</span><span class="s0">, </span><span class="s1">-</span><span class="s2">1</span><span class="s0">, </span><span class="s1">-</span><span class="s2">1</span><span class="s1">): </span><span class="s3"># start from bottom, going up</span>
+            <span class="s0">if </span><span class="s1">boardCopy[x][y] == EMPTY_SPACE:</span>
+                <span class="s1">possibleGems = list(range(len(GEMIMAGES)))</span>
+                <span class="s0">for </span><span class="s1">offsetX</span><span class="s0">, </span><span class="s1">offsetY </span><span class="s0">in </span><span class="s1">((</span><span class="s2">0</span><span class="s0">, </span><span class="s1">-</span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">1</span><span class="s0">, </span><span class="s2">0</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(</span><span class="s2">0</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span><span class="s0">, </span><span class="s1">(-</span><span class="s2">1</span><span class="s0">, </span><span class="s2">0</span><span class="s1">)):</span>
+                    <span class="s3"># Narrow down the possible gems we should put in the</span>
+                    <span class="s3"># blank space so we don't end up putting an two of</span>
+                    <span class="s3"># the same gems next to each other when they drop.</span>
+                    <span class="s1">neighborGem = getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x + offsetX</span><span class="s0">, </span><span class="s1">y + offsetY)</span>
+                    <span class="s0">if </span><span class="s1">neighborGem != </span><span class="s0">None and </span><span class="s1">neighborGem </span><span class="s0">in </span><span class="s1">possibleGems:</span>
+                        <span class="s1">possibleGems.remove(neighborGem)</span>
+
+                <span class="s1">newGem = random.choice(possibleGems)</span>
+                <span class="s1">boardCopy[x][y] = newGem</span>
+                <span class="s1">dropSlots[x].append(newGem)</span>
+    <span class="s0">return </span><span class="s1">dropSlots</span>
+
+
+<span class="s0">def </span><span class="s1">findMatchingGems(board):</span>
+    <span class="s1">gemsToRemove = [] </span><span class="s3"># a list of lists of gems in matching triplets that should be removed</span>
+    <span class="s1">boardCopy = copy.deepcopy(board)</span>
+
+    <span class="s3"># loop through each space, checking for 3 adjacent identical gems</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT):</span>
+            <span class="s3"># look for horizontal matches</span>
+            <span class="s0">if </span><span class="s1">getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y) == getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x + </span><span class="s2">1</span><span class="s0">, </span><span class="s1">y) == getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x + </span><span class="s2">2</span><span class="s0">, </span><span class="s1">y) </span><span class="s0">and </span><span class="s1">getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y) != EMPTY_SPACE:</span>
+                <span class="s1">targetGem = boardCopy[x][y]</span>
+                <span class="s1">offset = </span><span class="s2">0</span>
+                <span class="s1">removeSet = []</span>
+                <span class="s0">while </span><span class="s1">getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x + offset</span><span class="s0">, </span><span class="s1">y) == targetGem:</span>
+                    <span class="s3"># keep checking if there's more than 3 gems in a row</span>
+                    <span class="s1">removeSet.append((x + offset</span><span class="s0">, </span><span class="s1">y))</span>
+                    <span class="s1">boardCopy[x + offset][y] = EMPTY_SPACE</span>
+                    <span class="s1">offset += </span><span class="s2">1</span>
+                <span class="s1">gemsToRemove.append(removeSet)</span>
+
+            <span class="s3"># look for vertical matches</span>
+            <span class="s0">if </span><span class="s1">getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y) == getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y + </span><span class="s2">1</span><span class="s1">) == getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y + </span><span class="s2">2</span><span class="s1">) </span><span class="s0">and </span><span class="s1">getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y) != EMPTY_SPACE:</span>
+                <span class="s1">targetGem = boardCopy[x][y]</span>
+                <span class="s1">offset = </span><span class="s2">0</span>
+                <span class="s1">removeSet = []</span>
+                <span class="s0">while </span><span class="s1">getGemAt(boardCopy</span><span class="s0">, </span><span class="s1">x</span><span class="s0">, </span><span class="s1">y + offset) == targetGem:</span>
+                    <span class="s3"># keep checking, in case there's more than 3 gems in a row</span>
+                    <span class="s1">removeSet.append((x</span><span class="s0">, </span><span class="s1">y + offset))</span>
+                    <span class="s1">boardCopy[x][y + offset] = EMPTY_SPACE</span>
+                    <span class="s1">offset += </span><span class="s2">1</span>
+                <span class="s1">gemsToRemove.append(removeSet)</span>
+
+    <span class="s0">return </span><span class="s1">gemsToRemove</span>
+
+
+<span class="s0">def </span><span class="s1">highlightSpace(x</span><span class="s0">, </span><span class="s1">y):</span>
+    <span class="s1">pygame.draw.rect(DISPLAYSURF</span><span class="s0">, </span><span class="s1">HIGHLIGHTCOLOR</span><span class="s0">, </span><span class="s1">BOARDRECTS[x][y]</span><span class="s0">, </span><span class="s2">4</span><span class="s1">)</span>
+
+
+<span class="s0">def </span><span class="s1">getDroppingGems(board):</span>
+    <span class="s3"># Find all the gems that have an empty space below them</span>
+    <span class="s1">boardCopy = copy.deepcopy(board)</span>
+    <span class="s1">droppingGems = []</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT - </span><span class="s2">2</span><span class="s0">, </span><span class="s1">-</span><span class="s2">1</span><span class="s0">, </span><span class="s1">-</span><span class="s2">1</span><span class="s1">):</span>
+            <span class="s0">if </span><span class="s1">boardCopy[x][y + </span><span class="s2">1</span><span class="s1">] == EMPTY_SPACE </span><span class="s0">and </span><span class="s1">boardCopy[x][y] != EMPTY_SPACE:</span>
+                <span class="s3"># This space drops if not empty but the space below it is</span>
+                <span class="s1">droppingGems.append( {</span><span class="s4">'imageNum'</span><span class="s1">: boardCopy[x][y]</span><span class="s0">, </span><span class="s4">'x'</span><span class="s1">: x</span><span class="s0">, </span><span class="s4">'y'</span><span class="s1">: y</span><span class="s0">, </span><span class="s4">'direction'</span><span class="s1">: DOWN} )</span>
+                <span class="s1">boardCopy[x][y] = EMPTY_SPACE</span>
+    <span class="s0">return </span><span class="s1">droppingGems</span>
+
+
+<span class="s0">def </span><span class="s1">animateMovingGems(board</span><span class="s0">, </span><span class="s1">gems</span><span class="s0">, </span><span class="s1">pointsText</span><span class="s0">, </span><span class="s1">score):</span>
+    <span class="s3"># pointsText is a dictionary with keys 'x', 'y', and 'points'</span>
+    <span class="s1">progress = </span><span class="s2">0 </span><span class="s3"># progress at 0 represents beginning, 100 means finished.</span>
+    <span class="s0">while </span><span class="s1">progress &lt; </span><span class="s2">100</span><span class="s1">: </span><span class="s3"># animation loop</span>
+        <span class="s1">DISPLAYSURF.fill(BGCOLOR)</span>
+        <span class="s1">drawBoard(board)</span>
+        <span class="s0">for </span><span class="s1">gem </span><span class="s0">in </span><span class="s1">gems: </span><span class="s3"># Draw each gem.</span>
+            <span class="s1">drawMovingGem(gem</span><span class="s0">, </span><span class="s1">progress)</span>
+        <span class="s1">drawScore(score)</span>
+        <span class="s0">for </span><span class="s1">pointText </span><span class="s0">in </span><span class="s1">pointsText:</span>
+            <span class="s1">pointsSurf = BASICFONT.render(str(pointText[</span><span class="s4">'points'</span><span class="s1">])</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s1">SCORECOLOR)</span>
+            <span class="s1">pointsRect = pointsSurf.get_rect()</span>
+            <span class="s1">pointsRect.center = (pointText[</span><span class="s4">'x'</span><span class="s1">]</span><span class="s0">, </span><span class="s1">pointText[</span><span class="s4">'y'</span><span class="s1">])</span>
+            <span class="s1">DISPLAYSURF.blit(pointsSurf</span><span class="s0">, </span><span class="s1">pointsRect)</span>
+
+        <span class="s1">pygame.display.update()</span>
+        <span class="s1">FPSCLOCK.tick(FPS)</span>
+        <span class="s1">progress += MOVERATE </span><span class="s3"># progress the animation a little bit more for the next frame</span>
+
+
+<span class="s0">def </span><span class="s1">moveGems(board</span><span class="s0">, </span><span class="s1">movingGems):</span>
+    <span class="s3"># movingGems is a list of dicts with keys x, y, direction, imageNum</span>
+    <span class="s0">for </span><span class="s1">gem </span><span class="s0">in </span><span class="s1">movingGems:</span>
+        <span class="s0">if </span><span class="s1">gem[</span><span class="s4">'y'</span><span class="s1">] != ROWABOVEBOARD:</span>
+            <span class="s1">board[gem[</span><span class="s4">'x'</span><span class="s1">]][gem[</span><span class="s4">'y'</span><span class="s1">]] = EMPTY_SPACE</span>
+            <span class="s1">movex = </span><span class="s2">0</span>
+            <span class="s1">movey = </span><span class="s2">0</span>
+            <span class="s0">if </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == LEFT:</span>
+                <span class="s1">movex = -</span><span class="s2">1</span>
+            <span class="s0">elif </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == RIGHT:</span>
+                <span class="s1">movex = </span><span class="s2">1</span>
+            <span class="s0">elif </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == DOWN:</span>
+                <span class="s1">movey = </span><span class="s2">1</span>
+            <span class="s0">elif </span><span class="s1">gem[</span><span class="s4">'direction'</span><span class="s1">] == UP:</span>
+                <span class="s1">movey = -</span><span class="s2">1</span>
+            <span class="s1">board[gem[</span><span class="s4">'x'</span><span class="s1">] + movex][gem[</span><span class="s4">'y'</span><span class="s1">] + movey] = gem[</span><span class="s4">'imageNum'</span><span class="s1">]</span>
+        <span class="s0">else</span><span class="s1">:</span>
+            <span class="s3"># gem is located above the board (where new gems come from)</span>
+            <span class="s1">board[gem[</span><span class="s4">'x'</span><span class="s1">]][</span><span class="s2">0</span><span class="s1">] = gem[</span><span class="s4">'imageNum'</span><span class="s1">] </span><span class="s3"># move to top row</span>
+
+
+<span class="s0">def </span><span class="s1">fillBoardAndAnimate(board</span><span class="s0">, </span><span class="s1">points</span><span class="s0">, </span><span class="s1">score):</span>
+    <span class="s1">dropSlots = getDropSlots(board)</span>
+    <span class="s0">while </span><span class="s1">dropSlots != [[]] * BOARDWIDTH:</span>
+        <span class="s3"># do the dropping animation as long as there are more gems to drop</span>
+        <span class="s1">movingGems = getDroppingGems(board)</span>
+        <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(len(dropSlots)):</span>
+            <span class="s0">if </span><span class="s1">len(dropSlots[x]) != </span><span class="s2">0</span><span class="s1">:</span>
+                <span class="s3"># cause the lowest gem in each slot to begin moving in the DOWN direction</span>
+                <span class="s1">movingGems.append({</span><span class="s4">'imageNum'</span><span class="s1">: dropSlots[x][</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s4">'x'</span><span class="s1">: x</span><span class="s0">, </span><span class="s4">'y'</span><span class="s1">: ROWABOVEBOARD</span><span class="s0">, </span><span class="s4">'direction'</span><span class="s1">: DOWN})</span>
+
+        <span class="s1">boardCopy = getBoardCopyMinusGems(board</span><span class="s0">, </span><span class="s1">movingGems)</span>
+        <span class="s1">animateMovingGems(boardCopy</span><span class="s0">, </span><span class="s1">movingGems</span><span class="s0">, </span><span class="s1">points</span><span class="s0">, </span><span class="s1">score)</span>
+        <span class="s1">moveGems(board</span><span class="s0">, </span><span class="s1">movingGems)</span>
+
+        <span class="s3"># Make the next row of gems from the drop slots</span>
+        <span class="s3"># the lowest by deleting the previous lowest gems.</span>
+        <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(len(dropSlots)):</span>
+            <span class="s0">if </span><span class="s1">len(dropSlots[x]) == </span><span class="s2">0</span><span class="s1">:</span>
+                <span class="s0">continue</span>
+            <span class="s1">board[x][</span><span class="s2">0</span><span class="s1">] = dropSlots[x][</span><span class="s2">0</span><span class="s1">]</span>
+            <span class="s0">del </span><span class="s1">dropSlots[x][</span><span class="s2">0</span><span class="s1">]</span>
+
+
+<span class="s0">def </span><span class="s1">checkForGemClick(pos):</span>
+    <span class="s3"># See if the mouse click was on the board</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT):</span>
+            <span class="s0">if </span><span class="s1">BOARDRECTS[x][y].collidepoint(pos[</span><span class="s2">0</span><span class="s1">]</span><span class="s0">, </span><span class="s1">pos[</span><span class="s2">1</span><span class="s1">]):</span>
+                <span class="s0">return </span><span class="s1">{</span><span class="s4">'x'</span><span class="s1">: x</span><span class="s0">, </span><span class="s4">'y'</span><span class="s1">: y}</span>
+    <span class="s0">return None </span><span class="s3"># Click was not on the board.</span>
+
+
+<span class="s0">def </span><span class="s1">drawBoard(board):</span>
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">range(BOARDWIDTH):</span>
+        <span class="s0">for </span><span class="s1">y </span><span class="s0">in </span><span class="s1">range(BOARDHEIGHT):</span>
+            <span class="s1">pygame.draw.rect(DISPLAYSURF</span><span class="s0">, </span><span class="s1">GRIDCOLOR</span><span class="s0">, </span><span class="s1">BOARDRECTS[x][y]</span><span class="s0">, </span><span class="s2">1</span><span class="s1">)</span>
+            <span class="s1">gemToDraw = board[x][y]</span>
+            <span class="s0">if </span><span class="s1">gemToDraw != EMPTY_SPACE:</span>
+                <span class="s1">DISPLAYSURF.blit(GEMIMAGES[gemToDraw]</span><span class="s0">, </span><span class="s1">BOARDRECTS[x][y])</span>
+
+
+<span class="s0">def </span><span class="s1">getBoardCopyMinusGems(board</span><span class="s0">, </span><span class="s1">gems):</span>
+    <span class="s3"># Creates and returns a copy of the passed board data structure,</span>
+    <span class="s3"># with the gems in the &quot;gems&quot; list removed from it.</span>
+    <span class="s3">#</span>
+    <span class="s3"># Gems is a list of dicts, with keys x, y, direction, imageNum</span>
+
+    <span class="s1">boardCopy = copy.deepcopy(board)</span>
+
+    <span class="s3"># Remove some of the gems from this board data structure copy.</span>
+    <span class="s0">for </span><span class="s1">gem </span><span class="s0">in </span><span class="s1">gems:</span>
+        <span class="s0">if </span><span class="s1">gem[</span><span class="s4">'y'</span><span class="s1">] != ROWABOVEBOARD:</span>
+            <span class="s1">boardCopy[gem[</span><span class="s4">'x'</span><span class="s1">]][gem[</span><span class="s4">'y'</span><span class="s1">]] = EMPTY_SPACE</span>
+    <span class="s0">return </span><span class="s1">boardCopy</span>
+
+
+<span class="s0">def </span><span class="s1">drawScore(score):</span>
+    <span class="s1">scoreImg = BASICFONT.render(str(score)</span><span class="s0">, </span><span class="s2">1</span><span class="s0">, </span><span class="s1">SCORECOLOR)</span>
+    <span class="s1">scoreRect = scoreImg.get_rect()</span>
+    <span class="s1">scoreRect.bottomleft = (</span><span class="s2">10</span><span class="s0">, </span><span class="s1">WINDOWHEIGHT - </span><span class="s2">6</span><span class="s1">)</span>
+    <span class="s1">DISPLAYSURF.blit(scoreImg</span><span class="s0">, </span><span class="s1">scoreRect)</span>
+
+
+
+
+<span class="s0">if </span><span class="s1">__name__ == </span><span class="s4">'__main__'</span><span class="s1">:</span>
+    <span class="s1">main()</span>
+</pre>
+</body>
+</html>
